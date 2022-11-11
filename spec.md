@@ -213,6 +213,7 @@ namespace Vendor\Package;
 use Vendor\Package\{ClassA as A, ClassB, ClassC as C};
 use Vendor\Package\SomeNamespace\ClassD as D;
 use Vendor\Package\AnotherNamespace\ClassE as E;
+use SomeVendor\Pack\ANamespace\SubNamespace\ClassF;
 
 use function Vendor\Package\{functionA, functionB, functionC};
 use function Another\Vendor\functionD;
@@ -229,8 +230,8 @@ class FooBar
 }
 ```
 
-Compound namespaces with a depth of more than two MUST NOT be used. Therefore, the
-following is the maximum compounding depth allowed:
+When using compound namespaces, there MUST NOT be more than two sub-namespaces within the group.
+That is, the following is allowed:
 
 ```php
 <?php
@@ -249,6 +250,7 @@ And the following would not be allowed:
 <?php
 
 use Vendor\Package\SomeNamespace\{
+    // This has too many namespace segments to be in a group.
     SubnamespaceOne\AnotherNamespace\ClassA,
     SubnamespaceOne\ClassB,
     ClassZ,
@@ -295,6 +297,14 @@ there are no arguments passed to the constructor.
 
 ```php
 new Foo();
+```
+
+If class contains no additional declarations (such as an exception that exists only extend another exception with a new type),
+then the body of the class SHOULD be abbreviated as `{}` and placed on the same line as the previous symbol,
+separated by a space.  For example:
+
+```php
+class MyException extends \RuntimeException {}
 ```
 
 ### 4.1 Extends and Implements
@@ -513,12 +523,35 @@ function fooBarBaz($arg1, &$arg2, $arg3 = [])
 }
 ```
 
-### 4.5 Method and Function Arguments
+If a function or method contains no statements (such as a no-op implementation or when using
+constructor property promotion), then the body SHOULD be abbreviated as `{}` and placed on the same
+line as the previous symbol, separated by a space.  For example:
+
+```php
+class Point
+{
+    public function __construct(private int $x, private int $y) {}
+    
+    // ...
+}
+```
+
+```php
+class Point
+{
+    public function __construct(
+      public readonly int $x,
+      public readonly int $y,
+    ) {}
+}
+```
+
+### 4.5 Method and Function Parameters
 
 In the argument list, there MUST NOT be a space before each comma, and there
 MUST be one space after each comma.
 
-Method and function arguments with default values MUST go at the end of the argument
+Method and function parameters with default values MUST go at the end of the argument
 list.
 
 ```php
@@ -633,7 +666,7 @@ public function process(string $algorithm, &...$parts)
 
 ### 4.6 Modifier Keywords
 
-Properties and methods of a class have numerous keyword modifiers that alter how the
+Classes, properties, and methods have numerous keyword modifiers that alter how the
 engine and language handles them.  When present, they MUST be in the following order:
 
 * Inheritance modifier: `abstract` or `final`
@@ -712,6 +745,13 @@ somefunction($foo, $bar, [
 $app->get('/hello/{name}', function ($name) use ($app) {
     return 'Hello ' . $app->escape($name);
 });
+```
+
+If using named arguments, there MUST NOT be a space between the argument name
+and colon, and there MUST be a single space between the colon and the argument value.
+
+```php
+somefunction($a, b: $b, c: 'c');
 ```
 
 Method chaining MAY be put on separate lines, where each subsequent line is indented once. When doing so, the first
@@ -1316,6 +1356,143 @@ function allowed()
             COMPLIANT,
          'bar',
     );
+}
+```
+
+## 11. Arrays
+
+Arrays MUST be declared using the short array syntax.
+
+```php
+<?php
+
+$arr = [];
+```
+
+Arrays MUST follow the trailing comma guidelines.
+
+Array declarations MAY be split across multiple lines, where each subsequent line 
+is indented once. When doing so, the first value in the array MUST be on the 
+next line, and there MUST be only one value per line.
+
+When the array declaration is split across multiple lines, the opening bracket 
+MUST be placed on the same line as the equals sign. The closing bracket 
+MUST be placed on the next line after the last value. There MUST NOT be more 
+than one value assignment per line. Value assignments MAY use a single line
+or multiple lines.
+
+```php
+<?php
+
+$arr1 = ['single', 'line', 'declaration'];
+
+$arr2 = [
+    'multi',
+    'line',
+    'declaration',
+    ['values' => 1, 5, 7],
+    [
+        'nested',
+        'array',
+    ],
+];
+```
+
+## 12. Attributes
+
+### 12.1 Basics
+
+Attribute names MUST immediately follow the opening attribute block indicator `#[` with no space.
+
+If an attribute has no arguments, the `()` MUST be omitted.
+
+The closing attribute block indicator `]` MUST follow the last character of the attribute name or the closing `)` of
+its argument list, with no preceding space.
+
+The construct `#[...]` is referred to as an "attribute block" in this document.
+
+### 12.2 Placement
+
+Attributes on classes, methods, functions, constants and properties MUST
+be placed on their own line, immediately prior to the structure being described.
+
+For attributes on parameters, if the parameter list is presented on a single line,
+the attribute MUST be placed inline with the parameter it describes, separated by a single space.
+If the parameter list is split into multiple lines for any reason, the attribute MUST be placed on
+its own line prior to the parameter, indented the same as the parameter.  If the parameter list
+is split into multiple lines, a blank line MAY be included between one parameter and the attributes
+of the following parameter in order to aid readability.
+
+If a comment docblock is present on a structure that also includes an attribute, the comment block MUST
+come first, followed by any attributes, followed by the structure itself.  There MUST NOT be any blank lines
+between the docblock and attributes, or the attributes and the structure.
+
+If two separate attribute blocks are used in a multi-line context, they MUST be on separate lines with no blank
+lines between them.
+
+### 12.3 Compound attributes
+
+If multiple attributes are placed in the same attribute block, they MUST be separated by a comma with a space
+following but no space preceding.  If the attribute list is split into multiple lines for any reason, then the
+attributes MUST be placed in separate attribute blocks. Those blocks may themselves contain multiple
+attributes provided this rule is respected.
+
+If an attribute's argument list is split into multiple lines for any reason, then:
+
+* The attribute MUST be the only one in its attribute block.
+* The attribute arguments MUST follow the same rules as defined for multiline function calls.
+
+### 12.4 Example
+
+The following is an example of valid attribute usage.
+
+```php
+#[Foo]
+#[Bar('baz')]
+class Demo
+{
+    #[Beep]
+    private Foo $foo;
+
+    public function __construct(
+        #[Load(context: 'foo', bar: true)]
+        private readonly FooService $fooService,
+
+        #[LoadProxy(context: 'bar')]
+        private readonly BarService $barService,
+    ) {}
+
+    /**
+     * Sets the foo.
+     */
+    #[Poink('narf'), Narf('poink')]
+    public function setFoo(#[Beep] Foo $new): void
+    {
+      // ...
+    }
+
+    #[Complex(
+        prop: 'val',
+        other: 5,
+    )]
+    #[Other, Stuff]
+    #[Here]
+    public function complicated(
+        string $a,
+
+        #[Decl]
+        string $b,
+
+        #[Complex(
+            prop: 'val',
+            other: 5,
+        )]
+        string $c,
+
+        int $d,
+    ): string {
+        // ...
+    }
 }
 ```
 
